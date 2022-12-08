@@ -35,14 +35,6 @@ def test_model_overlapping():
 
 
 def test_model():
-    class Address(Model):
-        street = f.TextField("Street")
-        number = f.TextField("Number")
-
-        class Meta:
-            base_id = "address_base_id"
-            table_name = "Address"
-            api_key = "fake"
 
     class Contact(Model):
 
@@ -70,7 +62,7 @@ def test_model():
     assert contact.first_name == "Gui"
     assert not contact.id
 
-    # delete
+    # save
     with mock.patch.object(Table, "create") as m_save:
         m_save.return_value = {"id": "id", "createdTime": "time"}
         contact.save()
