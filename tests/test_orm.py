@@ -5,6 +5,7 @@ import pytest
 from pyairtable import Table
 from pyairtable.orm import Model
 from pyairtable.orm import fields as f
+import unittest
 
 
 def test_model_missing_meta():
@@ -147,3 +148,58 @@ def test_linked_record():
         contact.address[0].fetch()
 
     assert contact.address[0].street == "A"
+
+
+class TestORM(unittest.TestCase):
+
+	def test_save_linked_record(self):
+
+		class Address(Model):
+			street = f.TextField("Street")
+
+			class Meta:
+				base_id = "address_base_id"
+				table_name = "Address"
+				api_key = "fake"
+
+		class Contact(Model):
+			first_name = f.TextField("First Name")
+			address = f.LinkField("Link", Address, lazy=True)
+
+			class Meta:
+				base_id = "contact_base_id"
+				table_name = "Contact"
+				api_key = "fake"
+
+		address = Address(street="A")
+		contact = Contact(first_name="B", address=[address])
+
+		# assert both models are unsaved
+		assert not address.id
+		assert not contact.id
+
+		# save
+		with mock.patch.object(Table, "create") as m:
+			# m.return_value = {"id": "contact_id", "createdTime": "time"}
+			m.side_effect = [
+				{"id": "address_id", "createdTime": "time"},
+				{"id": "contact_id", "createdTime": "time"},
+			]
+			contact.save()
+			print(m.mock_calls)
+			m.assert_has_calls([
+				mock.call({'Street': 'A'}, typecast=True),
+				mock.call({
+					'First Name': 'B',
+					'Link': [{
+						'id': 'address_id',
+						'createdTime': 'time',
+						'fields': {'Street': 'A'}
+					}]
+				}, typecast=True)
+			])
+
+		assert m.called
+		assert address.id == "address_id"
+		assert contact.id == "contact_id"
+

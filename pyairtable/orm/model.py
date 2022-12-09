@@ -64,7 +64,7 @@ import abc
 from pyairtable import Table
 from typing import TypeVar, Type, List
 
-from .fields import Field
+from .fields import Field, LinkField
 
 T = TypeVar("T", bound="Model")
 
@@ -208,6 +208,14 @@ class Model(metaclass=abc.ABCMeta):
         Returns `True` if was created and `False` if it was updated
         """
         table = self.get_table()
+
+        # recursively save link fields
+        map_ = self._field_name_descriptor_map()
+        for k, v in self._fields.items():
+            if isinstance(map_[k], LinkField):
+                for vv in v:
+                    vv.save()
+
         record = self.to_record()
         fields = record["fields"]
 

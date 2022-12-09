@@ -264,7 +264,7 @@ class LinkField(Field, Generic[T_Linked]):
         return linked_models
 
     def to_record_value(self, value: Any) -> List[str]:
-        return [v.id for v in value]
+        return [v.to_record() for v in value]
 
 
 """
